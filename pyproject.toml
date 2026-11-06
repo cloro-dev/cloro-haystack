@@ -1,0 +1,58 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cloro-haystack"
+version = "0.1.0"
+description = "Haystack components for cloro: Google search results with the AI Overview, and ChatGPT, Google AI Mode and Gemini answers with sources."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["Haystack", "cloro", "Web Search", "Google", "AI Overview", "AI Mode", "ChatGPT", "Gemini"]
+authors = [{ name = "cloro", email = "support@cloro.dev" }]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+dependencies = ["haystack-ai>=2.24.1", "httpx>=0.27.0"]
+
+[project.urls]
+Homepage = "https://cloro.dev/?utm_source=cloro-haystack&utm_medium=byok"
+Documentation = "https://github.com/cloro-dev/cloro-haystack#readme"
+Issues = "https://github.com/cloro-dev/cloro-haystack/issues"
+Source = "https://github.com/cloro-dev/cloro-haystack"
+
+[dependency-groups]
+dev = ["pytest>=8.0", "ruff>=0.11", "mypy>=1.10"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/", "tests/", "LICENSE", "README.md"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/haystack_integrations"]
+
+[tool.mypy]
+check_untyped_defs = true
+disallow_incomplete_defs = true
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["A", "ANN", "ARG", "B", "C", "D102", "D103", "D205", "D209", "D213", "D417", "D419", "DTZ", "E", "EM", "F", "I", "ICN", "ISC", "N", "PLC", "PLE", "PLR", "PLW", "Q", "RUF", "S", "T", "TID", "UP", "W", "YTT"]
+ignore = ["B008", "S105", "S106", "S107", "C901", "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR0917", "ANN401"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["haystack_integrations"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "parents"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*" = ["PLR2004", "S101", "TID252", "D", "ANN"]
