@@ -1,17 +1,42 @@
-# Builds the package and publishes it to PyPI when a version tag (v*) is pushed.
+# Publishes to PyPI when a merge to main changes `version` in pyproject.toml,
+# then creates the vX.Y.Z tag and GitHub Release. A version tag (v*) pushed by
+# hand also publishes.
 # PyPI trusted publishing: no API token is stored in this repository.
 name: Publish to PyPI
 
 on:
   push:
+    branches: [main]
     tags: ["v*"]
+  workflow_dispatch:
 
 jobs:
+  check:
+    if: github.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      new: ${{ steps.v.outputs.new }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/v$version" > /dev/null; then
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
+
   publish:
+    needs: check
+    if: always() && (github.ref_type == 'tag' || needs.check.outputs.new == 'true')
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
       id-token: write
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -20,3 +45,10 @@ jobs:
       - run: python -m pip install build
       - run: python -m build
       - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
+      - name: Create the GitHub release
+        if: github.ref_type == 'branch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "v${{ needs.check.outputs.version }}" --target "$GITHUB_SHA" --title "v${{ needs.check.outputs.version }}" --generate-notes
