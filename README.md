@@ -6,7 +6,7 @@
 | Component | cloro endpoint | Output | Credits per run |
 |---|---|---|--:|
 | `CloroWebSearch` | `POST /v1/monitor/google` | `documents` and `links` from Google organic results. With `include_ai_overview=True`, the Google AI Overview is the first Document. | 5, or 7 with the AI Overview |
-| `CloroAIAnswer` | `POST /v1/monitor/chatgpt`, `/aimode` or `/gemini` | `replies` (the answer as Markdown), `documents` and `links` (the cited sources) | ChatGPT 7, AI Mode 6, Gemini 6 |
+| `CloroAIAnswer` | `POST /v1/monitor/chatgpt`, `/aimode`, `/gemini` or `/bing/aimode` | `replies` (the answer as Markdown), `documents` and `links` (the cited sources) | ChatGPT 7, Google AI Mode 6, Gemini 6, Bing AI Mode 6 |
 
 ## Installation
 
@@ -52,7 +52,7 @@ Parameters:
 ```python
 from haystack_integrations.components.websearch.cloro import CloroAIAnswer
 
-ai_answer = CloroAIAnswer(engine="aimode")  # "chatgpt", "aimode" or "gemini"
+ai_answer = CloroAIAnswer(engine="aimode")  # "chatgpt", "aimode", "gemini" or "bing_aimode"
 result = ai_answer.run(query="What is retrieval-augmented generation?")
 
 print(result["replies"][0])
@@ -62,6 +62,10 @@ print(result["links"])
 `replies` has one string: the answer as Markdown. `documents` has one `Document` for each source that
 the answer cites, with `title`, `link` and `position` in `meta`. An answer can take 15 to 60 seconds,
 so the default `timeout` is 180 seconds.
+
+With `engine="bing_aimode"`, the query can have a maximum of 3,500 characters after URL encoding,
+and fewer for non-Latin scripts. To send the query from a US state, set
+`search_params={"state": "CA"}` with `country="US"` (2 more credits).
 
 ### In a pipeline
 

@@ -1,0 +1,36 @@
+{
+  "success": true,
+  "result": {
+    "text": "For most beginners, a neutral road shoe with soft cushioning is the safest start.",
+    "sources": [
+      {
+        "position": 1,
+        "label": "The Best Running Shoes for Beginners",
+        "url": "https://www.runnersworld.com/gear/a20865766/best-running-shoes-for-beginners/",
+        "description": "Our test team picked the best shoes for new runners."
+      },
+      {
+        "position": 2,
+        "label": "How to Choose Running Shoes",
+        "url": "https://www.rei.com/learn/expert-advice/running-shoes.html"
+      }
+    ],
+    "citationPills": [
+      {
+        "position": 1,
+        "label": "The Best Running Shoes for Beginners",
+        "url": "https://www.runnersworld.com/gear/a20865766/best-running-shoes-for-beginners/",
+        "domain": "runnersworld.com",
+        "citationPillId": 1
+      },
+      {
+        "position": 2,
+        "label": "How to Choose Running Shoes",
+        "url": "https://www.rei.com/learn/expert-advice/running-shoes.html",
+        "domain": "rei.com",
+        "citationPillId": 1
+      }
+    ],
+    "markdown": "For most beginners, a **neutral road shoe with soft cushioning** is the safest start.[The Best Running Shoes for Beginners](https://www.runnersworld.com/gear/a20865766/best-running-shoes-for-beginners/)[How to Choose Running Shoes](https://www.rei.com/learn/expert-advice/running-shoes.html)"
+  }
+}

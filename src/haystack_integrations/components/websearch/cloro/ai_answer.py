@@ -11,7 +11,15 @@ from haystack_integrations.components.websearch.cloro._api import is_direct_link
 
 logger = logging.getLogger(__name__)
 
-Engine = Literal["chatgpt", "aimode", "gemini"]
+Engine = Literal["chatgpt", "aimode", "gemini", "bing_aimode"]
+
+# The API path for each engine.
+_PATHS: dict[str, str] = {
+    "chatgpt": "/v1/monitor/chatgpt",
+    "aimode": "/v1/monitor/aimode",
+    "gemini": "/v1/monitor/gemini",
+    "bing_aimode": "/v1/monitor/bing/aimode",
+}
 
 
 @component
@@ -19,7 +27,7 @@ class CloroAIAnswer:
     """
     Gets the answer that an AI search engine gives to a query, with the sources it cites.
 
-    The component sends the query to ChatGPT, Google AI Mode or Gemini through the
+    The component sends the query to ChatGPT, Google AI Mode, Gemini or Bing AI Mode through the
     [cloro](https://cloro.dev/?utm_source=cloro-haystack&utm_medium=byok) API.
     `replies` has the answer as Markdown. `documents` has one
     Document for each cited source, with `title`, `link` and `position` in its meta.
@@ -51,16 +59,18 @@ class CloroAIAnswer:
         :param api_key:
             cloro API key. Defaults to the `CLORO_API_KEY` environment variable.
         :param engine:
-            The AI search engine: `"chatgpt"`, `"aimode"` (Google AI Mode) or `"gemini"`.
+            The AI search engine: `"chatgpt"`, `"aimode"` (Google AI Mode), `"gemini"` or
+            `"bing_aimode"` (Bing AI Mode).
         :param country:
             ISO 3166-1 alpha-2 country code for the engine location.
         :param search_params:
-            Other fields for the `POST /v1/monitor/<engine>` request body. See the cloro API reference.
+            Other fields for the engine request body, for example `state` for ChatGPT, Gemini or
+            Bing AI Mode. See the cloro API reference.
         :param timeout:
             Request timeout in seconds. An answer can take 15 to 60 seconds.
         """
-        if engine not in ("chatgpt", "aimode", "gemini"):
-            msg = f"engine must be 'chatgpt', 'aimode' or 'gemini', not {engine!r}"
+        if engine not in _PATHS:
+            msg = f"engine must be 'chatgpt', 'aimode', 'gemini' or 'bing_aimode', not {engine!r}"
             raise ValueError(msg)
         self.api_key = api_key
         self.engine = engine
@@ -129,7 +139,7 @@ class CloroAIAnswer:
         return self._parse(result)
 
     def _path(self) -> str:
-        return f"/v1/monitor/{self.engine}"
+        return _PATHS[self.engine]
 
     def _payload(self, query: str) -> dict[str, Any]:
         payload: dict[str, Any] = {"prompt": query, "country": self.country, **(self.search_params or {})}

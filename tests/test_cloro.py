@@ -133,12 +133,15 @@ def test_websearch_run_async(api):
 # CloroAIAnswer
 
 
-@pytest.mark.parametrize("engine", ["chatgpt", "aimode", "gemini"])
-def test_ai_answer_request(api, engine):
+@pytest.mark.parametrize(
+    ("engine", "path"),
+    [("chatgpt", "chatgpt"), ("aimode", "aimode"), ("gemini", "gemini"), ("bing_aimode", "bing/aimode")],
+)
+def test_ai_answer_request(api, engine, path):
     api.respond(httpx.Response(200, json=_load("aimode.json")))
     CloroAIAnswer(engine=engine).run(query="rank tracker")
     request = api.calls[0]
-    assert str(request.url) == f"https://api.cloro.dev/v1/monitor/{engine}"
+    assert str(request.url) == f"https://api.cloro.dev/v1/monitor/{path}"
     assert _body(request) == {"prompt": "rank tracker", "country": "US", "include": {"markdown": True}}
 
 
@@ -156,6 +159,16 @@ def test_ai_answer_output(api):
     assert result["links"] == [s["url"] for s in sources]
     assert result["documents"][0].meta == {"title": sources[0]["label"], "link": sources[0]["url"], "position": 1}
     assert result["documents"][0].content == sources[0]["description"]
+
+
+def test_ai_answer_bing_aimode_output(api):
+    payload = _load("bing_aimode.json")
+    api.respond(httpx.Response(200, json=payload))
+    result = CloroAIAnswer(engine="bing_aimode", search_params={"state": "CA"}).run(query="running shoes")
+    assert _body(api.calls[0])["state"] == "CA"
+    assert result["replies"] == [payload["result"]["markdown"]]
+    assert result["links"] == [s["url"] for s in payload["result"]["sources"]]
+    assert result["documents"][1].content == payload["result"]["sources"][1]["label"]
 
 
 def test_ai_answer_chatgpt_without_markdown_or_description(api):
