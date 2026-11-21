@@ -5,7 +5,7 @@
 
 | Component | cloro endpoint | Output | Credits per run |
 |---|---|---|--:|
-| `CloroWebSearch` | `POST /v1/monitor/google` | `documents` and `links` from Google organic results. With `include_ai_overview=True`, the Google AI Overview is the first Document. | 5, or 7 with the AI Overview |
+| `CloroWebSearch` | `POST /v1/monitor/google` or `/bing` | `documents` and `links` from Google or Bing organic results. With `include_ai_overview=True`, the AI Overview is the first Document. | 5, or 7 with the AI Overview |
 | `CloroAIAnswer` | `POST /v1/monitor/chatgpt`, `/aimode`, `/gemini` or `/bing/aimode` | `replies` (the answer as Markdown), `documents` and `links` (the cited sources) | ChatGPT 7, Google AI Mode 6, Gemini 6, Bing AI Mode 6 |
 
 ## Installation
@@ -32,9 +32,10 @@ for doc in result["documents"]:
     print(doc.meta.get("title"), doc.meta.get("link"))
 ```
 
-Each organic result is a `Document`. Its `content` is the Google snippet and its `meta` has `title`,
-`link` and `position`. The AI Overview Document has `meta["source"] == "google_ai_overview"` and the
-URLs it cites in `meta["links"]`. Results with an empty link or a Google redirect link are skipped.
+Each organic result is a `Document`. Its `content` is the result snippet and its `meta` has `title`,
+`link` and `position`. The AI Overview Document has `meta["source"] == "google_ai_overview"` (or
+`"bing_ai_overview"`) and the URLs it cites in `meta["links"]`. Results with an empty link or a Google
+redirect link are skipped.
 
 Parameters:
 
@@ -43,9 +44,19 @@ Parameters:
   results (about 10). Set `search_params={"pages": 2}` for more (2 credits for each extra page).
 - `country`: ISO 3166-1 alpha-2 country code. Defaults to `"US"`.
 - `allowed_domains`: domains to limit the search to, sent as `site:` filters.
-- `include_ai_overview`: request the Google AI Overview. Defaults to `False`.
-- `search_params`: other request fields, for example `device`, `location`, `hl` or `pages`.
+- `include_ai_overview`: request the AI Overview. Defaults to `False`.
+- `search_params`: other request fields, for example `device`, `location`, `hl` or `pages` for Google.
 - `timeout`: request timeout in seconds. Defaults to 60.
+- `engine`: `"google"` (Google Search) or `"bing"` (Bing Search). Defaults to `"google"`.
+
+With `engine="bing"`, the component searches Bing. The country sets the Bing market. Bing Search accepts
+all countries except CN, KR and RU. It has no `device`, `location`, `hl` or `pages` fields and returns
+one page of results. The query can have a maximum of 3,500 characters after URL encoding, and fewer for
+non-Latin scripts.
+
+```python
+websearch = CloroWebSearch(engine="bing", country="GB", include_ai_overview=True)
+```
 
 ### CloroAIAnswer
 

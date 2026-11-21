@@ -124,6 +124,27 @@ def test_websearch_top_k_domains_and_params(api):
     assert len(result["links"]) == 2
 
 
+def test_websearch_bing_request_and_ai_overview(api):
+    payload = _load("bing.json")
+    api.respond(httpx.Response(200, json=payload))
+    result = CloroWebSearch(engine="bing", country="GB", include_ai_overview=True).run(query="season a wok")
+    request = api.calls[0]
+    assert str(request.url) == "https://api.cloro.dev/v1/monitor/bing"
+    assert _body(request) == {"query": "season a wok", "country": "GB", "include": {"aioverview": True}}
+    overview = result["documents"][0]
+    assert overview.content == payload["result"]["aioverview"]["text"]
+    assert overview.meta["title"] == "Bing AI Overview"
+    assert overview.meta["source"] == "bing_ai_overview"
+    assert overview.meta["links"] == [s["url"] for s in payload["result"]["aioverview"]["sources"]]
+    assert result["links"] == [r["link"] for r in payload["result"]["organicResults"]]
+    assert len(result["documents"]) == 4
+
+
+def test_websearch_rejects_other_engines():
+    with pytest.raises(ValueError, match="engine"):
+        CloroWebSearch(engine="other")  # type: ignore[arg-type]
+
+
 def test_websearch_run_async(api):
     api.respond(httpx.Response(200, json=_load("google_aioverview.json")))
     result = asyncio.run(CloroWebSearch().run_async(query="q"))
@@ -241,6 +262,7 @@ def test_error_message_has_no_key(api):
     "component",
     [
         CloroWebSearch(top_k=3, country="GB", include_ai_overview=True, search_params={"device": "mobile"}),
+        CloroWebSearch(engine="bing", country="DE"),
         CloroAIAnswer(engine="gemini", country="FR"),
     ],
 )
