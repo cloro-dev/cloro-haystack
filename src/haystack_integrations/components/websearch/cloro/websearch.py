@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from typing import Any
+from typing import Any, Literal
 
 from haystack import Document, component, default_from_dict, default_to_dict, logging
 from haystack.utils import Secret, deserialize_secrets_inplace
@@ -11,19 +11,23 @@ from haystack_integrations.components.websearch.cloro._api import is_direct_link
 
 logger = logging.getLogger(__name__)
 
-GOOGLE_PATH = "/v1/monitor/google"
+Engine = Literal["google", "bing"]
+
+# The API path and the display name for each engine.
+_PATHS: dict[str, str] = {"google": "/v1/monitor/google", "bing": "/v1/monitor/bing"}
+_NAMES: dict[str, str] = {"google": "Google", "bing": "Bing"}
 
 
 @component
 class CloroWebSearch:
     """
-    Searches Google with the cloro API and returns the results as Documents.
+    Searches Google or Bing with the cloro API and returns the results as Documents.
 
     cloro: https://cloro.dev/?utm_source=cloro-haystack&utm_medium=byok
 
-    Each organic result becomes a Document. Its content is the Google snippet. Its meta has
-    `title`, `link` and `position`. With `include_ai_overview=True`, the Google AI Overview
-    (when Google shows one) is the first Document.
+    Each organic result becomes a Document. Its content is the result snippet. Its meta has
+    `title`, `link` and `position`. With `include_ai_overview=True`, the AI Overview of the
+    engine (when the engine shows one) is the first Document.
 
     ### Usage example
 
@@ -46,6 +50,7 @@ class CloroWebSearch:
         include_ai_overview: bool = False,
         search_params: dict[str, Any] | None = None,
         timeout: float = 60.0,
+        engine: Engine = "google",
     ) -> None:
         """
         Initialize the CloroWebSearch component.
@@ -53,22 +58,28 @@ class CloroWebSearch:
         :param api_key:
             cloro API key. Defaults to the `CLORO_API_KEY` environment variable.
         :param top_k:
-            Maximum number of organic results to return. One request returns one page of Google
-            results (about 10). Set `search_params={"pages": 2}` or more to get more results.
+            Maximum number of organic results to return. One request returns one page of results
+            (about 10). For Google, set `search_params={"pages": 2}` or more to get more results.
         :param country:
-            ISO 3166-1 alpha-2 country code for the Google location.
+            ISO 3166-1 alpha-2 country code for the engine location.
         :param allowed_domains:
             Domains to limit the search to. They are added to the query as `site:` filters.
         :param include_ai_overview:
-            If True, request the Google AI Overview and return it as the first Document.
+            If True, request the AI Overview and return it as the first Document.
         :param search_params:
-            Other fields for the `POST /v1/monitor/google` request body, for example `device`,
-            `location`, `hl` or `pages`. See the cloro API reference.
+            Other fields for the engine request body, for example `device`, `location`, `hl` or
+            `pages` for Google. See the cloro API reference.
         :param timeout:
             Request timeout in seconds.
+        :param engine:
+            The search engine: `"google"` (Google Search) or `"bing"` (Bing Search).
         """
+        if engine not in _PATHS:
+            msg = f"engine must be 'google' or 'bing', not {engine!r}"
+            raise ValueError(msg)
         self.api_key = api_key
         self.top_k = top_k
+        self.engine = engine
         self.country = country
         self.allowed_domains = allowed_domains
         self.include_ai_overview = include_ai_overview
@@ -90,6 +101,7 @@ class CloroWebSearch:
             include_ai_overview=self.include_ai_overview,
             search_params=self.search_params,
             timeout=self.timeout,
+            engine=self.engine,
         )
 
     @classmethod
@@ -106,7 +118,7 @@ class CloroWebSearch:
     @component.output_types(documents=list[Document], links=list[str])
     def run(self, query: str) -> dict[str, Any]:
         """
-        Search Google with cloro.
+        Search Google or Bing with cloro.
 
         :param query: Search query.
         :returns: A dictionary with:
@@ -115,13 +127,13 @@ class CloroWebSearch:
         :raises TimeoutError: If the request times out.
         :raises CloroError: If the cloro API returns an error.
         """
-        result = post(GOOGLE_PATH, self._payload(query), self.api_key, self.timeout)
+        result = post(_PATHS[self.engine], self._payload(query), self.api_key, self.timeout)
         return self._parse(result)
 
     @component.output_types(documents=list[Document], links=list[str])
     async def run_async(self, query: str) -> dict[str, Any]:
         """
-        Search Google with cloro without blocking.
+        Search Google or Bing with cloro without blocking.
 
         This is the asynchronous version of `run`, with the same parameters and return values.
 
@@ -132,7 +144,7 @@ class CloroWebSearch:
         :raises TimeoutError: If the request times out.
         :raises CloroError: If the cloro API returns an error.
         """
-        result = await post_async(GOOGLE_PATH, self._payload(query), self.api_key, self.timeout)
+        result = await post_async(_PATHS[self.engine], self._payload(query), self.api_key, self.timeout)
         return self._parse(result)
 
     def _payload(self, query: str) -> dict[str, Any]:
@@ -167,7 +179,11 @@ class CloroWebSearch:
                 0,
                 Document(
                     content=overview["text"],
-                    meta={"title": "Google AI Overview", "source": "google_ai_overview", "links": sources},
+                    meta={
+                        "title": f"{_NAMES[self.engine]} AI Overview",
+                        "source": f"{self.engine}_ai_overview",
+                        "links": sources,
+                    },
                 ),
             )
 
