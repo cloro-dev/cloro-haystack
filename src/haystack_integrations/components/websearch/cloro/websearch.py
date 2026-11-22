@@ -59,7 +59,7 @@ class CloroWebSearch:
             cloro API key. Defaults to the `CLORO_API_KEY` environment variable.
         :param top_k:
             Maximum number of organic results to return. One request returns one page of results
-            (about 10). For Google, set `search_params={"pages": 2}` or more to get more results.
+            (about 10). Set `search_params={"pages": 2}` or more to get more results.
         :param country:
             ISO 3166-1 alpha-2 country code for the engine location.
         :param allowed_domains:
@@ -68,7 +68,7 @@ class CloroWebSearch:
             If True, request the AI Overview and return it as the first Document.
         :param search_params:
             Other fields for the engine request body, for example `device`, `location`, `hl` or
-            `pages` for Google. See the cloro API reference.
+            `pages` for Google, and `pages` or `first` for Bing. See the cloro API reference.
         :param timeout:
             Request timeout in seconds.
         :param engine:

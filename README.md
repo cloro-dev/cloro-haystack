@@ -40,18 +40,20 @@ redirect link are skipped.
 Parameters:
 
 - `api_key`: defaults to the `CLORO_API_KEY` environment variable.
-- `top_k`: maximum number of organic results. Defaults to 10. One request returns one page of Google
+- `top_k`: maximum number of organic results. Defaults to 10. One request returns one page of
   results (about 10). Set `search_params={"pages": 2}` for more (2 credits for each extra page).
 - `country`: ISO 3166-1 alpha-2 country code. Defaults to `"US"`.
 - `allowed_domains`: domains to limit the search to, sent as `site:` filters.
 - `include_ai_overview`: request the AI Overview. Defaults to `False`.
-- `search_params`: other request fields, for example `device`, `location`, `hl` or `pages` for Google.
+- `search_params`: other request fields, for example `device`, `location`, `hl` or `pages` for Google, and
+  `pages` or `first` for Bing.
 - `timeout`: request timeout in seconds. Defaults to 60.
 - `engine`: `"google"` (Google Search) or `"bing"` (Bing Search). Defaults to `"google"`.
 
 With `engine="bing"`, the component searches Bing. The country sets the Bing market. Bing Search accepts
-all countries except CN, KR and RU. It has no `device`, `location`, `hl` or `pages` fields and returns
-one page of results. The query can have a maximum of 3,500 characters after URL encoding, and fewer for
+all countries except CN, KR and RU. It has no `device`, `location` or `hl` fields. Set
+`search_params={"pages": 2}` for more results (2 credits for each extra page) or `search_params={"first": 11}`
+to start at a later result. Bing shows its AI summary only on the first page. The query can have a maximum of 3,500 characters after URL encoding, and fewer for
 non-Latin scripts.
 
 ```python
