@@ -37,6 +37,10 @@ Each organic result is a `Document`. Its `content` is the result snippet and its
 `"bing_ai_overview"`) and the URLs it cites in `meta["links"]`. Results with an empty link or a Google
 redirect link are skipped.
 
+With `include_ads=True`, the ads on the Google or Bing page are the last Documents. The content of an ad
+starts with `Ad:`. Its `meta["source"]` is `"google_ad"` or `"bing_ad"`, and its `meta` has `title`, `link`,
+`position`, `block_position`, `ad_type`, `price` and `store`, when the ad has them. `links` has no ads.
+
 Parameters:
 
 - `api_key`: defaults to the `CLORO_API_KEY` environment variable.
@@ -49,6 +53,8 @@ Parameters:
   `pages` or `first` for Bing.
 - `timeout`: request timeout in seconds. Defaults to 60.
 - `engine`: `"google"` (Google Search) or `"bing"` (Bing Search). Defaults to `"google"`.
+- `include_ads`: return the ads on the page. Defaults to `False`. The ads cost no extra credits and do not
+  count towards `top_k`.
 
 With `engine="bing"`, the component searches Bing. The country sets the Bing market. Bing Search accepts
 all countries except CN, KR and RU. It has no `device`, `location` or `hl` fields. Set

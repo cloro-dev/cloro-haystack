@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cloro-haystack"
-version = "0.3.0"
+version = "0.4.0"
 description = "Haystack components for cloro: Google and Bing search results with the AI Overview, and ChatGPT, Google AI Mode, Gemini and Bing AI Mode answers with sources."
 readme = "README.md"
 requires-python = ">=3.11"
