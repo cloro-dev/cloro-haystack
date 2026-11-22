@@ -35,7 +35,7 @@ for doc in result["documents"]:
 Each organic result is a `Document`. Its `content` is the result snippet and its `meta` has `title`,
 `link` and `position`. The AI Overview Document has `meta["source"] == "google_ai_overview"` (or
 `"bing_ai_overview"`) and the URLs it cites in `meta["links"]`. Results with an empty link or a Google
-redirect link are skipped.
+redirect link are skipped. The component does not return the Google or Bing ads.
 
 Parameters:
 
