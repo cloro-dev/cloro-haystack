@@ -140,6 +140,68 @@ def test_websearch_bing_request_and_ai_overview(api):
     assert len(result["documents"]) == 4
 
 
+ADS = [
+    {
+        "position": 1,
+        "blockPosition": "top",
+        "type": "RESULT",
+        "title": "Wok Sale",
+        "url": "https://shop.example/woks",
+        "page": 1,
+        "domain": "shop.example",
+        "description": "Carbon steel woks.",
+    },
+    {
+        "position": 1,
+        "blockPosition": "rhs",
+        "type": "SHOPPING_CARD",
+        "title": "14 in Wok",
+        "url": "https://shop.example/wok-14",
+        "page": 1,
+        "price": {"value": 29, "currency": "$", "raw": "$29.00"},
+        "store": "Shop",
+    },
+    {},
+]
+
+
+@pytest.mark.parametrize(("engine", "fixture"), [("google", "google_aioverview.json"), ("bing", "bing.json")])
+def test_websearch_ads(api, engine, fixture):
+    payload = _load(fixture)
+    payload["result"]["ads"] = ADS
+    api.respond(httpx.Response(200, json=payload))
+    result = CloroWebSearch(engine=engine, top_k=1, include_ads=True).run(query="wok")
+    assert "include" not in _body(api.calls[0])
+    assert len(result["links"]) == 1
+    text_ad, card, empty = result["documents"][1:]
+    assert text_ad.content == "Ad: Carbon steel woks."
+    assert text_ad.meta == {
+        "source": f"{engine}_ad",
+        "title": "Wok Sale",
+        "link": "https://shop.example/woks",
+        "position": 1,
+        "block_position": "top",
+        "ad_type": "RESULT",
+    }
+    assert card.content == "Ad: 14 in Wok"
+    assert card.meta["price"] == "$29.00"
+    assert card.meta["store"] == "Shop"
+    assert empty.meta == {"source": f"{engine}_ad"}
+
+
+def test_websearch_ads_off_by_default(api):
+    payload = _load("bing.json")
+    payload["result"]["ads"] = ADS
+    api.respond(httpx.Response(200, json=payload))
+    result = CloroWebSearch(engine="bing").run(query="wok")
+    assert [d.meta["link"] for d in result["documents"]] == result["links"]
+
+
+def test_websearch_include_ads_without_ads(api):
+    api.respond(httpx.Response(200, json=_load("bing.json")))
+    assert len(CloroWebSearch(engine="bing", include_ads=True).run(query="wok")["documents"]) == 3
+
+
 def test_websearch_rejects_other_engines():
     with pytest.raises(ValueError, match="engine"):
         CloroWebSearch(engine="other")  # type: ignore[arg-type]

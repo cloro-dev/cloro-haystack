@@ -27,7 +27,8 @@ class CloroWebSearch:
 
     Each organic result becomes a Document. Its content is the result snippet. Its meta has
     `title`, `link` and `position`. With `include_ai_overview=True`, the AI Overview of the
-    engine (when the engine shows one) is the first Document.
+    engine (when the engine shows one) is the first Document. With `include_ads=True`, the ads
+    on the page are the last Documents.
 
     ### Usage example
 
@@ -51,6 +52,7 @@ class CloroWebSearch:
         search_params: dict[str, Any] | None = None,
         timeout: float = 60.0,
         engine: Engine = "google",
+        include_ads: bool = False,
     ) -> None:
         """
         Initialize the CloroWebSearch component.
@@ -73,6 +75,9 @@ class CloroWebSearch:
             Request timeout in seconds.
         :param engine:
             The search engine: `"google"` (Google Search) or `"bing"` (Bing Search).
+        :param include_ads:
+            If True, return the ads on the page after the organic results. Each ad is a Document with
+            `meta["source"]` set to `"google_ad"` or `"bing_ad"`. The ads do not count towards `top_k`.
         """
         if engine not in _PATHS:
             msg = f"engine must be 'google' or 'bing', not {engine!r}"
@@ -85,6 +90,7 @@ class CloroWebSearch:
         self.include_ai_overview = include_ai_overview
         self.search_params = search_params
         self.timeout = timeout
+        self.include_ads = include_ads
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -102,6 +108,7 @@ class CloroWebSearch:
             search_params=self.search_params,
             timeout=self.timeout,
             engine=self.engine,
+            include_ads=self.include_ads,
         )
 
     @classmethod
@@ -122,7 +129,8 @@ class CloroWebSearch:
 
         :param query: Search query.
         :returns: A dictionary with:
-            - `documents`: The AI Overview (if requested and present), then the organic results.
+            - `documents`: The AI Overview (if requested and present), then the organic results, then
+                the ads (if requested and present).
             - `links`: The links of the organic results.
         :raises TimeoutError: If the request times out.
         :raises CloroError: If the cloro API returns an error.
@@ -139,7 +147,8 @@ class CloroWebSearch:
 
         :param query: Search query.
         :returns: A dictionary with:
-            - `documents`: The AI Overview (if requested and present), then the organic results.
+            - `documents`: The AI Overview (if requested and present), then the organic results, then
+                the ads (if requested and present).
             - `links`: The links of the organic results.
         :raises TimeoutError: If the request times out.
         :raises CloroError: If the cloro API returns an error.
@@ -171,6 +180,8 @@ class CloroWebSearch:
             for item in organic
         ]
         links = [item["link"] for item in organic]
+        if self.include_ads:
+            documents += [self._ad_document(ad) for ad in result.get("ads") or [] if isinstance(ad, dict)]
 
         overview = result.get("aioverview")
         if self.include_ai_overview and isinstance(overview, dict) and overview.get("text"):
@@ -189,3 +200,20 @@ class CloroWebSearch:
 
         logger.debug("cloro returned {count} documents", count=len(documents))
         return {"documents": documents, "links": links}
+
+    def _ad_document(self, ad: dict[str, Any]) -> Document:
+        # Every field of an ad can be absent.
+        price = ad.get("price")
+        meta = {
+            "title": ad.get("title"),
+            "link": ad.get("url") if is_direct_link(ad.get("url")) else None,
+            "position": ad.get("position"),
+            "block_position": ad.get("blockPosition"),
+            "ad_type": ad.get("type"),
+            "price": price.get("raw") if isinstance(price, dict) else None,
+            "store": ad.get("store"),
+        }
+        return Document(
+            content=f"Ad: {ad.get('description') or ad.get('title') or ''}".strip(),
+            meta={"source": f"{self.engine}_ad", **{key: value for key, value in meta.items() if value}},
+        )
