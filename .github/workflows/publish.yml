@@ -18,7 +18,7 @@ jobs:
       version: ${{ steps.v.outputs.version }}
       new: ${{ steps.v.outputs.new }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: v
         run: |
           version=$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml)
@@ -38,8 +38,8 @@ jobs:
       id-token: write
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: python -m pip install build
